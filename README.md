@@ -2,6 +2,8 @@
 
 Filter GitHub issues in your own words.
 
+![Better Backlog filtering a repository's issues to the people blocked from upgrading](.github/screenshot.png)
+
 ## Set up with your agent
 
 Paste this into Claude Code, Codex, or any coding agent:
