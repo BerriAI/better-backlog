@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Better Backlog</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <span class="wordmark">Better Backlog</span
+      ><span id="repository-divider" class="slash" hidden>/</span
+      ><a
+        id="repository-link"
+        href="https://github.com"
+        hidden
+        target="_blank"
+        rel="noreferrer"
+      ></a>
+    </header>
+    <main>
+      <nav id="recent" aria-label="Recent filters" hidden>
+        <ul id="recent-list"></ul>
+      </nav>
+      <div class="content">
+        <div class="page-heading">
+          <h1>Issues</h1>
+          <button
+            id="settings-toggle"
+            class="icon-button"
+            aria-label="Settings"
+            title="Settings"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              aria-hidden="true"
+            >
+              <path
+                d="m9.5 3-.6 2.2-1.7 1-2.2-.6-2.5 4.3L4.1 12l-.1 2-1.5 1.6L5 19.9l2.3-.6 1.6 1 .6 2.2h5l.6-2.2 1.7-1 2.2.6 2.5-4.3L19.9 14l.1-2 1.5-2.1L19 5.6l-2.3.6-1.6-1-.6-2.2z"
+                transform="translate(1 0) scale(.92)"
+              />
+              <circle cx="12" cy="12" r="3.5" />
+            </svg>
+          </button>
+        </div>
+        <section class="filters" aria-label="Issue filters">
+          <div id="criteria" aria-label="Active criteria"></div>
+          <form id="criterion-form">
+            <input
+              id="criterion"
+              aria-label="Add a filter"
+              placeholder="Filter these issues…"
+              autocomplete="off"
+            />
+          </form>
+        </section>
+        <div id="feedback" hidden>
+          <span id="status" role="status" aria-live="polite"></span>
+          <div class="feedback-actions">
+            <button id="stop" class="text-button" hidden>Stop</button
+            ><button id="retry" class="text-button" hidden>Retry</button
+            ><button id="show-all" class="text-button" hidden>Show all</button>
+          </div>
+        </div>
+        <p id="error" role="alert" hidden></p>
+        <section class="issue-list" aria-label="Issues">
+          <div id="progress" hidden><span></span></div>
+          <div class="list-toolbar">
+            <div class="state-tabs">
+              <button
+                id="open-tab"
+                class="state-tab selected"
+                data-state="open"
+                aria-pressed="true"
+              >
+                <svg
+                  viewBox="0 0 16 16"
+                  width="16"
+                  height="16"
+                  fill="currentColor"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm9-3.5v4a1 1 0 0 1-2 0v-4a1 1 0 0 1 2 0ZM8 12a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z"
+                  /></svg
+                ><span id="open-count"></span> Open</button
+              ><button
+                id="closed-tab"
+                class="state-tab"
+                data-state="closed"
+                aria-pressed="false"
+              >
+                <svg
+                  viewBox="0 0 16 16"
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  aria-hidden="true"
+                >
+                  <path d="m3 8 3 3 7-7" /></svg
+                ><span id="closed-count"></span> Closed
+              </button>
+            </div>
+            <div class="reload-group">
+              <span id="updated-at"></span><span id="reload-countdown"></span
+              ><button id="reload" class="text-button">Reload</button>
+            </div>
+          </div>
+          <div id="issues">
+            <div class="empty" role="status">Loading issues…</div>
+          </div>
+        </section>
+        <nav id="pagination" aria-label="Issue pages" hidden>
+          <button id="previous" class="page-button">Previous</button
+          ><span id="page-status"></span
+          ><button id="next" class="page-button">Next</button>
+        </nav>
+      </div>
+    </main>
+    <dialog id="settings" aria-labelledby="settings-title">
+      <form id="settings-form">
+        <div class="dialog-heading">
+          <h2 id="settings-title">Settings</h2>
+          <button
+            id="settings-close"
+            type="button"
+            class="icon-button"
+            aria-label="Close settings"
+          >
+            ×
+          </button>
+        </div>
+        <label for="repository">Repository</label
+        ><input
+          id="repository"
+          name="repo"
+          placeholder="owner/repository"
+          required
+          autocomplete="off"
+        />
+        <label for="provider">Connection</label
+        ><select id="provider" name="provider">
+          <option value="jev">TypeSafe</option>
+          <option value="gateway">LiteLLM gateway</option>
+        </select>
+        <div id="gateway-url">
+          <label for="base-url">Base URL</label
+          ><input
+            id="base-url"
+            name="baseUrl"
+            type="url"
+            placeholder="https://gateway.example.com"
+            autocomplete="off"
+          />
+        </div>
+        <label id="api-key-label" for="api-key">API key</label
+        ><input
+          id="api-key"
+          name="key"
+          type="password"
+          placeholder="Paste your key"
+          autocomplete="off"
+        />
+        <div id="gateway-model">
+          <div class="label-row">
+            <label for="model">Model</label
+            ><button id="load-models" type="button" class="text-button">
+              Load models
+            </button>
+          </div>
+          <select id="model" name="model">
+            <option value="">Choose a decision model</option>
+          </select>
+        </div>
+        <details>
+          <summary>More settings</summary>
+          <label for="fetch-hours">Reload every (hours)</label>
+          <input
+            id="fetch-hours"
+            name="fetchHours"
+            type="number"
+            min="0.25"
+            step="0.25"
+            value="24"
+            required
+          />
+          <label for="guidance">Standing instructions</label
+          ><textarea
+            id="guidance"
+            name="guidance"
+            rows="4"
+            placeholder="Optional instructions for every decision"
+          ></textarea
+          ><label class="file-button"
+            >Add AGENTS.md<input
+              id="guidance-file"
+              type="file"
+              accept=".md,.txt,text/plain,text/markdown" /></label
+          ><button id="forget" type="button" class="text-button danger">
+            Forget saved connection
+          </button>
+        </details>
+        <p class="hint">
+          Key saved locally in .env; never returned to the browser. Filtering
+          sends issue bodies, metadata, and instructions to your selected
+          provider.
+        </p>
+        <p id="settings-status" role="status" hidden></p>
+        <div class="dialog-footer">
+          <button type="submit" class="save-button">Save</button>
+        </div>
+      </form>
+    </dialog>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
