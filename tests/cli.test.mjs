@@ -62,6 +62,15 @@ test("the CLI filters, lists recent filters and forgets them through the running
   assert.match(text.stderr, /1 of 3 issues · 1 unclear/);
   assert.equal(calls, 3);
 
+  const exact = JSON.parse((await backlog("issues", "--label", "bug", "--created-after", "2026-10-01", "--sort", "reactions", "--limit", "2", "--json")).stdout);
+  assert.deepEqual(exact.issues.map(i => i.number), [3, 2]);
+  assert.equal(exact.matched, 3);
+  assert.equal(calls, 3, "exact queries never call the model");
+  const apiExact = await fetch(`${env.BETTER_BACKLOG_URL}/api/issues?repo=acme/widgets&label=bug&sort=comments&limit=1`);
+  assert.deepEqual((await apiExact.json()).issues.map(i => i.number), [3]);
+  const invalid = await fetch(`${env.BETTER_BACKLOG_URL}/api/issues?repo=acme/widgets&created-after=invalid`);
+  assert.equal(invalid.status, 400);
+
   assert.match((await backlog("recent")).stdout, /● +1 {2}Describes a bug/);
   assert.deepEqual(JSON.parse((await backlog("forget", "Describes a bug", "--json")).stdout), []);
   await assert.rejects(backlog("filter"), (error) => /Add at least one criterion/.test(error.stderr));

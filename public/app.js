@@ -1,3 +1,4 @@
+import { queryIssues, queryOptions, multipleOptions } from "./query.js";
 const $ = (selector) => document.querySelector(selector);
 const defaults = {
   repo: "",
@@ -214,12 +215,22 @@ function updateCountdown() {
   if (!seconds) load(state, true);
 }
 function render() {
-  const filtered = issues.filter(
+  let filtered = issues.filter(
     (issue) =>
       showAll ||
       !criteria.length ||
       records.get(issue.number)?.verdict === "yes",
   );
+  try {
+    const options = Object.fromEntries(new FormData($("#exact-filters")));
+    for (const key of multipleOptions) options[key] = (options[key] || '').split(',').map(x => x.trim()).filter(Boolean);
+    const result = queryIssues(filtered, options);
+    filtered = result.issues;
+    $("#exact-status").textContent = `${result.matched} matching · ${filtered.length} shown`;
+  } catch (error) {
+    filtered = [];
+    $("#exact-status").textContent = error.message;
+  }
   const previous = shown;
   shown = new Set();
   const pages = Math.max(1, Math.ceil(filtered.length / pageSize));
@@ -268,7 +279,7 @@ function render() {
       "",
       issue.user?.login || issue.author || "a deleted user",
     );
-    meta.append(author);
+    meta.append(author, document.createTextNode(` · ${issue.reactions?.total_count ?? 0} reactions · ${issue.reactions?.["+1"] ?? 0} 👍 · ${issue.comments ?? 0} comments`));
     const assignees = (issue.assignees || [])
       .map((assignee) => assignee.login)
       .filter(Boolean);
@@ -1072,3 +1083,26 @@ async function start() {
   }
 }
 start();
+
+// These fields operate locally on the same downloaded snapshot as the CLI.
+for (const [key, description] of Object.entries(queryOptions)) {
+  const label = document.createElement('label');
+  label.textContent = key.replaceAll('-', ' ');
+  const choices = key === 'sort' ? ['created', 'updated', 'reactions', 'thumbs-up', 'comments'] : key === 'order' ? ['desc', 'asc'] : null;
+  const input = document.createElement(choices ? 'select' : 'input');
+  input.name = key;
+  input.title = description;
+  if (choices) for (const choice of choices) {
+    const option = document.createElement('option'); option.value = option.textContent = choice; input.append(option);
+  }
+  else {
+    input.type = key.includes('-after') || key.includes('-before') ? 'date' : key.startsWith('min-') || key.startsWith('max-') || key === 'limit' ? 'number' : 'text';
+    if (input.type === 'number') input.min = '0';
+    input.placeholder = multipleOptions.includes(key) ? 'Comma-separated values' : description;
+  }
+  label.append(input); $('#exact-filters').append(label);
+}
+$('#exact-filters').addEventListener('input', () => { page = 1; render(); });
+$('#exact-filters').addEventListener('submit', event => event.preventDefault());
+const resetExact = document.createElement('button'); resetExact.type = 'reset'; resetExact.className = 'text-button'; resetExact.textContent = 'Clear exact filters'; $('#exact-filters').append(resetExact);
+$('#exact-filters').addEventListener('reset', () => { setTimeout(() => { page = 1; render(); }, 0); });

@@ -767,3 +767,10 @@ summary {
     font-size: 11px;
   }
 }
+
+.exact-filters { margin: 16px 0; padding: 14px; border: 1px solid #ddd; border-radius: 8px; }
+.exact-filters summary { cursor: pointer; font-weight: 500; }
+#exact-filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-top: 16px; }
+#exact-filters label { display: grid; gap: 5px; font-size: 12px; text-transform: capitalize; }
+#exact-filters input, #exact-filters select { width: 100%; min-width: 0; padding: 7px; border: 1px solid #ddd; border-radius: 5px; background: transparent; color: inherit; }
+#exact-status { font-size: 12px; margin-bottom: 0; }

@@ -1,3 +1,4 @@
+import { queryIssues, multipleOptions } from "./public/query.js";
 import http from "node:http";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
@@ -659,9 +660,14 @@ export function createServer({
       }
       if (req.method === "GET" && url.pathname === "/api/issues") {
         const { repo, state } = source(Object.fromEntries(url.searchParams));
+        const query = Object.fromEntries(url.searchParams);
+        for (const key of multipleOptions) query[key] = url.searchParams.getAll(key);
+        try { queryIssues([], query); } catch (error) { throw new PublicError(error.message); }
         const existing = await cached(repo, state);
+        const snapshot = existing || await refresh(repo, state);
         json(res, 200, {
-          ...(existing || (await refresh(repo, state))),
+          ...snapshot,
+          ...queryIssues(snapshot.issues, query),
           cached: Boolean(existing),
         });
         return;

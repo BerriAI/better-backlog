@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { readFile } from "node:fs/promises";
 import { parseArgs } from "node:util";
+import { queryOptions, multipleOptions, queryIssues } from "./public/query.js";
 import { createServer } from "./server.mjs";
 
 const usage = `Usage: node cli.mjs <command> [options]
@@ -14,9 +15,12 @@ Commands:
 
 Options:
   --repo owner/name       Repository (default: BETTER_BACKLOG_REPO)
-  --state open|closed     Issue state (default: open)
+  --state open|closed|all     Issue state (default: open)
   --instructions <file>   Standing instructions, such as AGENTS.md
   --json                  Machine-readable output
+
+Deterministic options for issues/reload (no model calls):
+${Object.entries(queryOptions).map(([key, help]) => `  --${key} <value>  ${help}`).join("\n")}
 `;
 
 let args;
@@ -24,6 +28,7 @@ try {
   args = parseArgs({
     allowPositionals: true,
     options: {
+      ...Object.fromEntries(Object.keys(queryOptions).map(key => [key, { type: "string", multiple: multipleOptions.includes(key) }])),
       repo: { type: "string" },
       state: { type: "string", default: "open" },
       instructions: { type: "string" },
@@ -105,6 +110,11 @@ const brief = (issue) => ({
   labels: (issue.labels || []).map((label) => label.name ?? label),
   created_at: issue.created_at,
   comments: issue.comments,
+  author: issue.user?.login || issue.author,
+  state: issue.state,
+  updated_at: issue.updated_at,
+  reactions: issue.reactions?.total_count ?? 0,
+  thumbs_up: issue.reactions?.["+1"] ?? 0,
 });
 const line = (issue) => `#${issue.number}\t${issue.title}\t${issue.html_url}`;
 
@@ -191,10 +201,13 @@ let guidance = "";
 try {
   if (!repo)
     throw new Error("Choose a repository with --repo owner/name.");
-  if (!["open", "closed"].includes(state))
-    throw new Error("Choose --state open or --state closed.");
+  if (!["open", "closed", "all"].includes(state))
+    throw new Error("Choose --state open, closed, or all.");
   if (options.instructions)
     guidance = await readFile(options.instructions, "utf8");
+  queryIssues([], options); // Validate before downloading or evaluating.
+  if (!["issues", "reload"].includes(command) && Object.keys(queryOptions).some(key => options[key] !== undefined))
+    throw new Error("Deterministic options apply to issues/reload. Use issues to shortlist first.");
   if (command === "filter") {
     if (!criteria.length) throw new Error("Add at least one criterion.");
     await filter();
@@ -207,15 +220,18 @@ try {
       command === "reload"
         ? await call("/api/reload", { repo, state })
         : await call(`/api/issues?${new URLSearchParams({ repo, state })}`);
+    const selected = queryIssues(result.issues, options);
     if (options.json)
       print({
         repo,
         state,
         updatedAt: result.updatedAt,
-        issues: result.issues.map(brief),
+        total: selected.total,
+        matched: selected.matched,
+        issues: selected.issues.map(brief),
       });
     else {
-      if (command === "issues") for (const issue of result.issues) console.log(line(issue));
+      if (command === "issues") for (const issue of selected.issues) console.log(`${line(issue)}\t${issue.reactions?.total_count ?? 0} reactions`);
       console.error(
         `${result.issues.length.toLocaleString()} ${state} issues · updated ${new Date(result.updatedAt).toLocaleString()}`,
       );
