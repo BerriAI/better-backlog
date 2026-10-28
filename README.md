@@ -1,6 +1,6 @@
 # Better Backlog
 
-Filter GitHub issues in your own words.
+Filter GitHub issues in your own words with decision models.
 
 ![Better Backlog filtering a repository's issues to the people blocked from upgrading](.github/screenshot.png)
 
